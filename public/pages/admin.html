@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin Dashboard – JagroMart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    body { padding-top:70px; }
+    .admin-wrap { padding:2rem 5%; max-width:1200px; margin:0 auto; }
+    .page-title { font-family:'Playfair Display',serif; font-size:2rem; font-weight:900; margin-bottom:2rem; }
+    .page-title span { color:var(--gold); }
+    /* STAT CARDS */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:2rem; }
+    .stat-card { background:linear-gradient(135deg,var(--navy-light),var(--navy)); border:1px solid rgba(201,168,76,0.15); border-radius:12px; padding:1.5rem; }
+    .stat-card .s-label { font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.5rem; }
+    .stat-card .s-val { font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; color:var(--gold); }
+    .stat-card .s-icon { font-size:1.5rem; float:right; opacity:0.6; }
+    /* TABLES */
+    .section-box { background:var(--navy); border:1px solid rgba(201,168,76,0.12); border-radius:14px; padding:1.5rem; margin-bottom:2rem; }
+    .box-title { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold); margin-bottom:1.2rem; display:flex; align-items:center; justify-content:space-between; }
+    table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+    th { text-align:left; padding:0.6rem 0.8rem; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); border-bottom:1px solid rgba(201,168,76,0.1); }
+    td { padding:0.7rem 0.8rem; border-bottom:1px solid rgba(201,168,76,0.06); vertical-align:middle; }
+    tr:hover td { background:rgba(201,168,76,0.03); }
+    .status-badge { padding:0.25rem 0.6rem; border-radius:100px; font-size:0.7rem; font-weight:700; text-transform:uppercase; }
+    .s-placed{background:rgba(52,152,219,0.15);color:#3498db;} .s-confirmed{background:rgba(46,204,113,0.15);color:var(--green);} .s-packed{background:rgba(241,196,15,0.15);color:#f1c40f;} .s-shipped{background:rgba(230,126,34,0.15);color:#e67e22;} .s-out_for_delivery{background:rgba(155,89,182,0.15);color:#9b59b6;} .s-delivered{background:rgba(46,204,113,0.15);color:var(--green);} .s-cancelled{background:rgba(231,76,60,0.15);color:var(--red);}
+    select.tiny { background:rgba(7,15,34,0.7); border:1px solid rgba(201,168,76,0.25); color:var(--white); padding:0.3rem 0.6rem; border-radius:6px; font-family:'DM Sans',sans-serif; font-size:0.78rem; outline:none; cursor:pointer; }
+    .low-stock { color:var(--red); font-weight:700; }
+    .tab-row { display:flex; gap:0.5rem; margin-bottom:1.5rem; }
+    .atab { padding:0.6rem 1.2rem; background:rgba(22,36,80,0.5); border:1px solid rgba(201,168,76,0.15); border-radius:8px; cursor:pointer; font-size:0.85rem; color:var(--muted); transition:all 0.2s; }
+    .atab.active,.atab:hover { background:rgba(201,168,76,0.12); border-color:var(--gold); color:var(--gold); }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">Jagro<span>Mart</span></a>
+  <div class="nav-right">
+    <a href="/shop" class="btn-outline-nav">🛒 Shop</a>
+    <a href="/account" class="btn-outline-nav">My Account</a>
+    <button onclick="logout()" class="btn-gold">Logout</button>
+  </div>
+</nav>
+
+<div class="admin-wrap">
+  <div class="page-title">Admin <span>Dashboard</span> 🛠️</div>
+
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="s-icon">📦</div><div class="s-label">Total Orders</div><div class="s-val" id="sTotal">—</div></div>
+    <div class="stat-card"><div class="s-icon">⏳</div><div class="s-label">Pending</div><div class="s-val" id="sPending">—</div></div>
+    <div class="stat-card"><div class="s-icon">✅</div><div class="s-label">Delivered</div><div class="s-val" id="sDelivered">—</div></div>
+    <div class="stat-card"><div class="s-icon">❌</div><div class="s-label">Cancelled</div><div class="s-val" id="sCancelled">—</div></div>
+    <div class="stat-card"><div class="s-icon">💰</div><div class="s-label">Revenue</div><div class="s-val" id="sRevenue">—</div></div>
+  </div>
+
+  <div class="tab-row">
+    <div class="atab active" onclick="switchAdmin('orders',this)">📦 Orders</div>
+    <div class="atab" onclick="switchAdmin('stock',this)">📊 Low Stock</div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="tab-content active" id="adminOrders">
+    <div class="section-box">
+      <div class="box-title">
+        <span>All Orders</span>
+        <select onchange="loadOrders(this.value)" style="background:rgba(7,15,34,0.7);border:1px solid rgba(201,168,76,0.25);color:var(--white);padding:0.4rem 0.8rem;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none;">
+          <option value="">All Status</option>
+          <option value="placed">Placed</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="packed">Packed</option>
+          <option value="shipped">Shipped</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Update Status</th><th>Date</th></tr></thead>
+          <tbody id="ordersTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- STOCK -->
+  <div class="tab-content" id="adminStock">
+    <div class="section-box">
+      <div class="box-title"><span>⚠️ Low Stock Alerts (below 10 units)</span></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Product</th><th>Brand</th><th>Category</th><th>Stock</th><th>Update Stock</th></tr></thead>
+          <tbody id="stockTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">JagroMart</div>
+  <div class="footer-copy">© 2025 JagroMart Admin Panel</div>
+</footer>
+
+<script src="/js/app.js"></script>
+<script>
+  if (!isLoggedIn()||!isAdmin()) window.location.href='/';
+
+  const STATUS_CLASS={placed:'s-placed',confirmed:'s-confirmed',packed:'s-packed',shipped:'s-shipped',out_for_delivery:'s-out_for_delivery',delivered:'s-delivered',cancelled:'s-cancelled'};
+  const NEXT_STATUSES = {
+    placed:['confirmed','cancelled'],
+    confirmed:['packed','cancelled'],
+    packed:['shipped'],
+    shipped:['out_for_delivery'],
+    out_for_delivery:['delivered'],
+    delivered:[], cancelled:[],
+  };
+
+  function switchAdmin(tab, el) {
+    document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(p=>p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('admin'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+  }
+
+  async function loadDashboard() {
+    const data = await api.get('/orders/admin/dashboard');
+    if (!data?.success) return;
+    document.getElementById('sTotal').textContent     = data.stats.total;
+    document.getElementById('sPending').textContent   = data.stats.pending;
+    document.getElementById('sDelivered').textContent = data.stats.delivered;
+    document.getElementById('sCancelled').textContent = data.stats.cancelled;
+    document.getElementById('sRevenue').textContent   = '₹'+data.stats.revenue.toLocaleString('en-IN');
+
+    const stockTb = document.getElementById('stockTable');
+    if (!data.lowStock?.length) { stockTb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--green);padding:1.5rem;">✅ All products have sufficient stock!</td></tr>'; }
+    else stockTb.innerHTML = data.lowStock.map(p=>`<tr>
+      <td>${p.name}</td><td style="color:var(--muted);">${p.brand}</td>
+      <td style="color:var(--muted);">${p.category}</td>
+      <td class="${p.stock<5?'low-stock':''}">${p.stock} ${p.stock===0?'🚫':p.stock<5?'⚠️':''}</td>
+      <td><div style="display:flex;gap:0.5rem;align-items:center;">
+        <input type="number" id="st-${p._id}" value="${p.stock}" min="0" style="width:70px;background:rgba(7,15,34,0.6);border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:0.3rem 0.5rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;"/>
+        <button onclick="updateStock('${p._id}')" class="btn-gold" style="padding:0.3rem 0.8rem;font-size:0.78rem;">Update</button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  async function loadOrders(statusFilter='') {
+    const url = '/orders/admin/all'+(statusFilter?'?status='+statusFilter:'');
+    const data = await api.get(url);
+    const tb = document.getElementById('ordersTable');
+    if (!data?.orders?.length) { tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:1.5rem;">No orders found.</td></tr>'; return; }
+    tb.innerHTML = data.orders.map(o=>{
+      const next = NEXT_STATUSES[o.status]||[];
+      const date = new Date(o.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+      return `<tr>
+        <td style="color:var(--gold);font-weight:600;">${o.orderId}</td>
+        <td><div style="font-weight:600;">${o.user?.name||'—'}</div><div style="color:var(--muted);font-size:0.75rem;">${o.user?.phone||''}</div></td>
+        <td>${o.items?.length} items</td>
+        <td style="font-weight:700;">₹${o.total}</td>
+        <td style="color:var(--muted);">${o.paymentMethod}</td>
+        <td><span class="status-badge ${STATUS_CLASS[o.status]||''}">${o.status.replace('_',' ')}</span></td>
+        <td>${next.length?`<select class="tiny" onchange="updateStatus('${o._id}',this.value,this)"><option value="">Move to...</option>${next.map(s=>`<option value="${s}">${s.replace('_',' ')}</option>`).join('')}</select>`:'<span style="color:var(--muted);font-size:0.78rem;">Final</span>'}</td>
+        <td style="color:var(--muted);">${date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function updateStatus(id, status, selectEl) {
+    if (!status) return;
+    const data = await api.put('/orders/admin/'+id+'/status', { status });
+    if (data?.success) { showToast('✅ Status updated to '+status.replace('_',' ')+'.'); loadOrders(); loadDashboard(); }
+    else { showToast(data?.message||'Update failed.','error'); selectEl.value=''; }
+  }
+
+  async function updateStock(id) {
+    const stock = parseInt(document.getElementById('st-'+id).value);
+    if (isNaN(stock)||stock<0) return showToast('Invalid stock value.','error');
+    const data = await api.put('/products/'+id+'/stock', { stock });
+    if (data?.success) { showToast('📦 Stock updated to '+stock+'.'); loadDashboard(); }
+    else showToast(data?.message||'Failed.','error');
+  }
+
+  loadDashboard();
+  loadOrders();
+</script>
+</body>
+</html>

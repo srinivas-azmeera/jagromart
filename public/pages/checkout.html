@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Checkout – JagroMart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    body { padding-top:80px; min-height:100vh; }
+    .checkout-wrap { max-width:1100px; margin:0 auto; padding:2rem 5%; display:grid; grid-template-columns:1.3fr 1fr; gap:2rem; }
+    .checkout-section { background:var(--navy); border:1px solid rgba(201,168,76,0.15); border-radius:14px; padding:1.8rem; margin-bottom:1.5rem; }
+    .cs-title { font-family:'Playfair Display',serif; font-size:1.2rem; color:var(--gold); margin-bottom:1.3rem; display:flex; align-items:center; gap:0.5rem; }
+    .payment-options { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-top:0.5rem; }
+    .pay-opt { border:1.5px solid rgba(201,168,76,0.2); border-radius:8px; padding:0.8rem 1rem; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:0.6rem; font-size:0.88rem; font-weight:500; }
+    .pay-opt:hover { border-color:var(--gold); background:rgba(201,168,76,0.05); }
+    .pay-opt.selected { border-color:var(--gold); background:rgba(201,168,76,0.12); color:var(--gold); }
+    .promo-row { display:flex; gap:0.8rem; }
+    .promo-row input { flex:1; background:rgba(7,15,34,0.6); border:1px solid rgba(201,168,76,0.2); border-radius:8px; padding:0.7rem 1rem; color:var(--white); font-family:'DM Sans',sans-serif; font-size:0.88rem; outline:none; }
+    .promo-row input:focus { border-color:var(--gold); }
+    .promo-btn { background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.3); color:var(--gold); padding:0.7rem 1.2rem; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; font-family:'DM Sans',sans-serif; transition:background 0.2s; }
+    .promo-btn:hover { background:rgba(201,168,76,0.25); }
+    .promo-success { color:var(--green); font-size:0.82rem; margin-top:0.5rem; display:none; }
+    /* ORDER SUMMARY */
+    .order-sticky { position:sticky; top:90px; }
+    .order-item { display:flex; align-items:center; gap:0.8rem; padding:0.7rem 0; border-bottom:1px solid rgba(201,168,76,0.07); }
+    .oi-icon { font-size:1.8rem; }
+    .oi-info { flex:1; font-size:0.83rem; }
+    .oi-price { font-size:0.88rem; color:var(--gold); font-weight:700; }
+    .summary-row { display:flex; justify-content:space-between; font-size:0.85rem; color:var(--muted); padding:0.4rem 0; }
+    .summary-row.final { color:var(--white); font-weight:700; font-size:1rem; border-top:1px solid rgba(201,168,76,0.15); margin-top:0.5rem; padding-top:0.7rem; }
+    .summary-row.final span:last-child { color:var(--gold); font-size:1.1rem; }
+    .place-order-btn { width:100%; background:linear-gradient(135deg,var(--gold),var(--gold-dim)); color:var(--navy-deep); border:none; padding:1.1rem; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:700; cursor:pointer; margin-top:1.2rem; transition:opacity 0.2s,transform 0.2s; box-shadow:0 4px 20px rgba(201,168,76,0.3); }
+    .place-order-btn:hover { opacity:0.9; transform:translateY(-1px); }
+    .place-order-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+    /* SUCCESS */
+    .success-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999; display:none; align-items:center; justify-content:center; }
+    .success-overlay.show { display:flex; }
+    .success-box { background:var(--navy); border:1px solid rgba(201,168,76,0.3); border-radius:20px; padding:3rem; text-align:center; max-width:420px; animation:modalIn 0.3s ease; }
+    @keyframes modalIn { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
+    .success-icon { font-size:4rem; margin-bottom:1rem; }
+    .success-box h2 { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--gold); margin-bottom:0.5rem; }
+    .success-box p { color:var(--muted); font-size:0.9rem; line-height:1.6; margin-bottom:0.3rem; }
+    @media(max-width:768px) { .checkout-wrap{grid-template-columns:1fr;} .payment-options{grid-template-columns:1fr 1fr;} .order-sticky{position:static;} }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">Jagro<span>Mart</span></a>
+  <div class="nav-right">
+    <a href="/shop" class="btn-outline-nav">← Back to Shop</a>
+    <span style="color:var(--muted);font-size:0.85rem;" id="navUserName2"></span>
+  </div>
+</nav>
+
+<div style="background:var(--navy);border-bottom:1px solid rgba(201,168,76,0.1);padding:1.5rem 5%;">
+  <h1 style="font-family:'Playfair Display',serif;font-size:1.8rem;">Checkout <span style="color:var(--gold)">🛒</span></h1>
+</div>
+
+<div class="checkout-wrap">
+  <!-- LEFT -->
+  <div>
+    <!-- DELIVERY ADDRESS -->
+    <div class="checkout-section">
+      <div class="cs-title">📍 Delivery Address</div>
+      <div class="form-row">
+        <div class="form-group"><label>Full Name</label><input id="addrName" type="text" placeholder="Jagan Nayak"/></div>
+        <div class="form-group"><label>Phone</label><input id="addrPhone" type="tel" placeholder="9876543210"/></div>
+      </div>
+      <div class="form-group"><label>Street Address</label><input id="addrStreet" type="text" placeholder="12, MG Road, Indiranagar"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>City</label><input id="addrCity" type="text" placeholder="Bengaluru"/></div>
+        <div class="form-group"><label>State</label><input id="addrState" type="text" placeholder="Karnataka"/></div>
+      </div>
+      <div class="form-group"><label>Pincode</label><input id="addrPin" type="text" placeholder="560001" maxlength="6"/></div>
+    </div>
+
+    <!-- PROMO CODE -->
+    <div class="checkout-section">
+      <div class="cs-title">🎟️ Promo Code</div>
+      <div class="promo-row">
+        <input type="text" id="promoInput" placeholder="Enter code (e.g. JAGRO10)" style="text-transform:uppercase"/>
+        <button class="promo-btn" onclick="applyPromo()">Apply</button>
+      </div>
+      <div class="promo-success" id="promoMsg"></div>
+      <div style="margin-top:0.8rem;font-size:0.78rem;color:var(--muted);">Available codes: <span style="color:var(--gold)">JAGRO10 • JAGRO50 • FRESH20 • NEWUSER</span></div>
+    </div>
+
+    <!-- PAYMENT -->
+    <div class="checkout-section">
+      <div class="cs-title">💳 Payment Method</div>
+      <div class="payment-options">
+        <div class="pay-opt selected" onclick="selectPay(this,'COD')" data-pay="COD">💵 Cash on Delivery</div>
+        <div class="pay-opt" onclick="selectPay(this,'UPI')" data-pay="UPI">📱 UPI</div>
+        <div class="pay-opt" onclick="selectPay(this,'CARD')" data-pay="CARD">💳 Credit/Debit Card</div>
+        <div class="pay-opt" onclick="selectPay(this,'NETBANKING')" data-pay="NETBANKING">🏦 Net Banking</div>
+      </div>
+      <p style="margin-top:1rem;font-size:0.78rem;color:var(--muted);">For UPI/Card/Netbanking — payment gateway integration can be added for live payments.</p>
+    </div>
+  </div>
+
+  <!-- RIGHT: ORDER SUMMARY -->
+  <div class="order-sticky">
+    <div class="checkout-section">
+      <div class="cs-title">🧾 Order Summary</div>
+      <div id="orderItems"></div>
+      <div style="margin-top:1rem;">
+        <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">₹0</span></div>
+        <div class="summary-row"><span>Delivery</span><span id="sumDelivery">₹49</span></div>
+        <div class="summary-row" id="discountRow" style="display:none;"><span>Discount 🎉</span><span id="sumDiscount" style="color:var(--green);">-₹0</span></div>
+        <div class="summary-row final"><span>Total</span><span id="sumTotal">₹0</span></div>
+      </div>
+      <button class="place-order-btn" id="placeBtn" onclick="placeOrder()">Place Order →</button>
+      <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:0.8rem;">🔒 Secure & Encrypted Checkout</p>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-box">
+    <div class="success-icon">🎉</div>
+    <h2>Order Placed!</h2>
+    <p id="successOrderId" style="color:var(--gold);font-weight:700;font-size:1rem;"></p>
+    <p>Your fresh groceries are confirmed and will be delivered within 24 hours.</p>
+    <p id="successDelivery" style="margin-top:0.5rem;"></p>
+    <div style="margin-top:2rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="/account" class="btn-gold" style="text-decoration:none;">Track Order</a>
+      <a href="/shop" class="btn-outline-nav" style="text-decoration:none;">Shop More</a>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  if (!isLoggedIn()) window.location.href='/login';
+
+  let selectedPay='COD', promoDiscount=0, appliedPromo='';
+  const user = getUser();
+  if (user) {
+    document.getElementById('addrName').value  = user.name||'';
+    document.getElementById('addrPhone').value = user.phone||'';
+    document.getElementById('navUserName2').textContent = '👤 '+user.name;
+  }
+
+  function selectPay(el, method) {
+    document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPay=method;
+  }
+
+  function renderSummary() {
+    const cart = getCart();
+    const items = document.getElementById('orderItems');
+    if (!cart.length) { items.innerHTML='<p style="color:var(--muted);text-align:center;">Cart is empty.</p>'; return; }
+    items.innerHTML = cart.map(c=>`
+      <div class="order-item">
+        <div class="oi-icon">${c.icon}</div>
+        <div class="oi-info"><strong>${c.name}</strong><br/><span style="color:var(--muted);font-size:0.75rem;">${c.weight} × ${c.qty}</span></div>
+        <div class="oi-price">₹${c.price*c.qty}</div>
+      </div>`).join('');
+    const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
+    const delivery = subtotal>=499?0:49;
+    const total    = subtotal+delivery-promoDiscount;
+    document.getElementById('sumSubtotal').textContent = '₹'+subtotal;
+    document.getElementById('sumDelivery').textContent = delivery===0?'FREE':'₹'+delivery;
+    document.getElementById('sumTotal').textContent    = '₹'+Math.max(total,0);
+    if (promoDiscount>0) {
+      document.getElementById('discountRow').style.display='flex';
+      document.getElementById('sumDiscount').textContent='-₹'+promoDiscount;
+    }
+  }
+
+  async function applyPromo() {
+    const code = document.getElementById('promoInput').value.trim();
+    if (!code) return;
+    const cart     = getCart();
+    const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
+    const data = await api.post('/orders/promo/validate', { code, subtotal });
+    const msgEl = document.getElementById('promoMsg');
+    msgEl.style.display='block';
+    if (data?.success) {
+      promoDiscount = data.discount;
+      appliedPromo  = code.toUpperCase();
+      msgEl.textContent = data.message;
+      msgEl.style.color = 'var(--green)';
+      renderSummary();
+    } else {
+      msgEl.textContent = data?.message||'Invalid code.';
+      msgEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function placeOrder() {
+    const name=document.getElementById('addrName').value.trim();
+    const phone=document.getElementById('addrPhone').value.trim();
+    const street=document.getElementById('addrStreet').value.trim();
+    const city=document.getElementById('addrCity').value.trim();
+    const state=document.getElementById('addrState').value.trim();
+    const pincode=document.getElementById('addrPin').value.trim();
+    if (!name||!phone||!street||!city||!state||!pincode)
+      return showToast('Please fill in all address fields.','error');
+    if (pincode.length!==6) return showToast('Enter a valid 6-digit pincode.','error');
+
+    const cart=getCart();
+    if (!cart.length) return showToast('Your cart is empty.','error');
+
+    const btn=document.getElementById('placeBtn');
+    btn.disabled=true; btn.textContent='Placing Order...';
+
+    const payload = {
+      items: cart.map(c=>({ productId:c._id, qty:c.qty, name:c.name })),
+      address: { name, phone, street, city, state, pincode },
+      paymentMethod: selectedPay,
+      promoCode: appliedPromo,
+    };
+
+    const data = await api.post('/orders', payload);
+    btn.disabled=false; btn.textContent='Place Order →';
+
+    if (!data?.success) return showToast(data?.message||'Order failed. Try again.','error');
+
+    // Show success
+    clearCart();
+    document.getElementById('successOrderId').textContent='Order ID: '+data.order.orderId;
+    const ed=new Date(data.order.estimatedDelivery);
+    document.getElementById('successDelivery').textContent='Estimated delivery: '+ed.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+    document.getElementById('successOverlay').classList.add('show');
+  }
+
+  renderSummary();
+</script>
+</body>
+</html>
